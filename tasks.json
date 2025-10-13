@@ -1,0 +1,11 @@
+[
+  {
+    "id": 1,
+    "description": "hotsauce",
+    "priority": "low",
+    "completed": false,
+    "created_at": "2025-10-12T20:41:25.216249",
+    "due_date": null,
+    "category": "general"
+  }
+]
