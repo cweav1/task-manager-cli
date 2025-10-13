@@ -4,6 +4,7 @@ Personal Task Manager CLI
 A simple command-line tool to manage your daily tasks.
 """
 
+from faulthandler import cancel_dump_traceback_later
 import json
 import os
 import sys
@@ -11,10 +12,24 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
 
+    
 class TaskManager:
     def __init__(self, data_file: str = "tasks.json"):
         self.data_file = data_file
         self.tasks = self.load_tasks()
+    
+    def calculate(self, n: int) -> int:
+        """Calculate the nth Fibonacci number."""
+        if n < 0:
+            raise ValueError("Input must be a non-negative integer.")
+        if n == 0:
+            return 0
+        elif n == 1:
+            return 1
+        a, b = 0, 1
+        for _ in range(2, n + 1):
+            a, b = b, a + b
+        return b
 
     def load_tasks(self) -> List[Dict[str, Any]]:
         """Load tasks from JSON file."""
@@ -178,6 +193,38 @@ class TaskManager:
             "pending": pending
         }
 
+    def search_tasks(self, keyword: str) -> None:
+        """Search tasks by keyword in description."""
+        if not keyword.strip():
+            print("Error: Search keyword cannot be empty.")
+            return
+
+        keyword_lower = keyword.lower()
+        matching_tasks = [
+            task for task in self.tasks
+            if keyword_lower in task["description"].lower()
+        ]
+
+        if not matching_tasks:
+            print(f"🔍 No tasks found matching '{keyword}'")
+            return
+
+        print(f"\n🔍 Search Results for '{keyword}' ({len(matching_tasks)} found):")
+        print("-" * 70)
+
+        for task in matching_tasks:
+            status = "✅" if task["completed"] else "⏳"
+            priority_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(task["priority"], "🟡")
+            category_emoji = {"work": "💼", "personal": "👤", "shopping": "🛒",
+                            "health": "🏥", "general": "📝"}.get(task.get("category", "general"), "📝")
+
+            due_info = ""
+            if task.get("due_date"):
+                due_date = datetime.fromisoformat(task["due_date"])
+                due_info = f" 📅 Due: {due_date.strftime('%m/%d/%Y')}"
+
+            print(f"{status} [{task['id']}] {priority_emoji} {category_emoji} {task['description']}{due_info}")
+
 
 def print_help():
     """Print help information."""
@@ -195,6 +242,7 @@ Commands:
   delete <id>                           - Delete a task
   due                                   - Show overdue and due today tasks
   upcoming                              - Show tasks due in next 7 days
+  search <keyword>                      - Search tasks by keyword
   stats                                 - Show task statistics
   help                                  - Show this help message
   quit/exit                             - Exit the program
@@ -207,6 +255,7 @@ Examples:
   list
   due
   upcoming
+  search groceries
   complete 1
   delete 2
   stats
@@ -219,6 +268,8 @@ def main():
 
     print("🎯 Welcome to Task Manager CLI!")
     print("Type 'help' for commands or 'quit' to exit.\n")
+    
+    print(task_manager.calculate(3))
 
     while True:
         try:
@@ -380,6 +431,14 @@ def main():
                     completion_rate = (
                         stats['completed'] / stats['total']) * 100
                     print(f"   Completion rate: {completion_rate:.1f}%")
+
+            elif cmd == 'search':
+                if len(command) < 2:
+                    print("❌ Usage: search <keyword>")
+                    continue
+
+                keyword = " ".join(command[1:])
+                task_manager.search_tasks(keyword)
 
             else:
                 print(f"❌ Unknown command: {cmd}")
